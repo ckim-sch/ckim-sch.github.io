@@ -1,0 +1,266 @@
+<html>
+
+<head>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript">
+
+    function drawChart() {
+
+      var billAmount = parseInt(document.getElementById('bill_amount').value);
+      var sidecarBenefit = parseInt(document.getElementById('sidecar_benefit').value);
+      var skipDeductibleBenefit = document.getElementById('skip_deductible_benefit').value ? parseInt(document.getElementById('skip_deductible_benefit').value) : 0;
+      var uncoveredServices = document.getElementById('uncovered_services').value ? parseInt(document.getElementById('uncovered_services').value) : 0;
+      var applicableDeductible = document.getElementById('applicable_deductible').value ? parseInt(document.getElementById('applicable_deductible').value) : 0;
+      var originalDeductible = applicableDeductible;
+
+      if (applicableDeductible > sidecarBenefit) {
+        window.alert('Deductible cannot be greater than sidecar benefit');
+        return;
+      }
+
+      var coveredServices = billAmount - uncoveredServices;
+
+      var uncoveredPortion = coveredServices - sidecarBenefit;
+      var allowanceTaxable = 0;
+      if (uncoveredPortion < 0) {
+        allowanceTaxable = -uncoveredPortion;
+        uncoveredPortion = 0;
+      }
+
+      var allowanceReimbursement = sidecarBenefit - allowanceTaxable;
+
+      dataRows = [];
+      dataRows.push(['Bill Amount', 'Covered Services', coveredServices]);
+      dataRows.push(['Covered Services', 'Sidecar Benefit', allowanceReimbursement]);
+      if (uncoveredServices > 0) {
+        dataRows.push(['Bill Amount', 'Uncovered Services', uncoveredServices]);
+        dataRows.push(['Uncovered Services', 'Member Share Pre Credit Adjustment', uncoveredServices]);
+      }
+      if (uncoveredPortion > 0) {
+        dataRows.push(['Covered Services', 'Member Share Pre Credit Adjustment', uncoveredPortion]);
+        // dataRows.push(['Uncovered Portion', 'Member Share Pre Credit Adjustment', uncoveredPortion]);
+      }
+      // if (applicableDeductible > 0) {
+      //   dataRows.push(['Deductible', 'Applicable Deductible', applicableDeductible]);
+      // }
+      if (sidecarBenefit > 0) {
+        dataRows.push(['Sidecar Benefit', 'Allowance(Reimbursement)', allowanceReimbursement]);
+      }
+      if (allowanceTaxable > 0) {
+        dataRows.push(['Sidecar Benefit', 'Allowance(Taxable)', allowanceTaxable]);
+      }
+
+      var deductibleTakenFromTaxable = 0;
+      var allowanceTaxableAfterDeductible = 0
+      // Step 0.  Use money from Allowance(Taxable to reduce deductible)
+      if (allowanceTaxable > 0 && applicableDeductible > 0) {
+        allowanceTaxableAfterDeductible = allowanceTaxable - applicableDeductible < 0 ? 0 : allowanceTaxable - applicableDeductible;
+        deductibleTakenFromTaxable = allowanceTaxable - allowanceTaxableAfterDeductible;
+        applicableDeductible = applicableDeductible - deductibleTakenFromTaxable;
+      }
+
+      if (allowanceTaxableAfterDeductible > 0) {
+        dataRows.push(['Allowance(Taxable)', 'Allowance(Taxable) After Deductible', allowanceTaxableAfterDeductible]);
+      }
+
+      if (deductibleTakenFromTaxable > 0) {
+        dataRows.push(['Allowance(Taxable)', 'Pay towards deductible', deductibleTakenFromTaxable]);
+      }
+
+      var allowanceReimbursementAfterDeductible = allowanceReimbursement;
+      var deductibleTakenFromReimbursement = 0;
+      if (allowanceReimbursement > 0 && applicableDeductible > 0) {
+        allowanceReimbursementAfterDeductible = allowanceReimbursement - applicableDeductible < 0 ? 0 : allowanceReimbursement - applicableDeductible;
+        deductibleTakenFromReimbursement = allowanceReimbursement - allowanceReimbursementAfterDeductible;
+        applicableDeductible = applicableDeductible - deductibleTakenFromReimbursement;
+      }
+
+      if (allowanceReimbursementAfterDeductible > 0) {
+        dataRows.push(['Allowance(Reimbursement)', 'Allowance(Reimbursement) After Deductible', allowanceReimbursementAfterDeductible]);
+      }
+
+      if (deductibleTakenFromReimbursement > 0) {
+        dataRows.push(['Allowance(Reimbursement)', 'Pay towards deductible', deductibleTakenFromReimbursement]);
+      }
+
+      var totalDeductiblePaid = deductibleTakenFromTaxable + deductibleTakenFromReimbursement;
+      var appliedDeductibleTaxableBenefit = 0
+      if (totalDeductiblePaid > allowanceReimbursement - skipDeductibleBenefit) {
+        appliedDeductibleTaxableBenefit = totalDeductiblePaid - allowanceReimbursement + skipDeductibleBenefit;
+      }
+
+      document.getElementById('reimbursement').textContent = `Allowance(Reimbursement)=${allowanceReimbursementAfterDeductible}`;
+      document.getElementById('taxable').textContent = `Allowance(Taxable)=${allowanceTaxableAfterDeductible}`;
+      document.getElementById('memberShare').textContent = `Total Member Share Pre Credit Adjustment=${uncoveredPortion + uncoveredServices}`;
+      if (appliedDeductibleTaxableBenefit > 0) {
+        document.getElementById('appliedDeductibleTaxableBenefit').textContent = `${originalDeductible} - (${billAmount} - ${skipDeductibleBenefit}) = Applied Deductible Taxable Benefit=${appliedDeductibleTaxableBenefit}`;
+
+      } else {
+        document.getElementById('appliedDeductibleTaxableBenefit').textContent = 'Applied Deductible Taxable Benefit=0';
+      }
+
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'From');
+      data.addColumn('string', 'To');
+      data.addColumn('number', 'Weight');
+      data.addRows(dataRows);
+
+      // Sets chart options.
+      var options = {
+        width: 1000,
+        height: 500
+      };
+
+
+
+      paymentDataRows = [];
+
+      paymentDataRows.push(['Member Share With Deductible', 'Member Share Pre Credit Adjustment', uncoveredPortion + uncoveredServices]);
+      if (applicableDeductible > 0) {
+        paymentDataRows.push(['Member Share With Deductible', 'Deductible', applicableDeductible]);
+        if (allowanceTaxable > 0) {
+
+        }
+      }
+      if (sidecarBenefit > 0) {
+        paymentDataRows.push(['Sidecar Benefit', 'Allowance(Reimbursement)', sidecarBenefit]);
+      }
+      if (allowanceTaxable > 0) {
+        paymentDataRows.push(['Sidecar Benefit', 'Allowance(Taxable)', allowanceTaxable]);
+      }
+
+      var chart = new google.visualization.Sankey(document.getElementById('sankey_basic'));
+      chart.draw(data, options);
+
+
+
+      var pieData = new google.visualization.DataTable();
+      pieData.addColumn('string', 'Bill Breakdown');
+      pieData.addColumn('number', 'Value');
+
+      pieData.addRows([
+        [`Sidecar Benefit $${sidecarBenefit}`, sidecarBenefit],
+        [`Your portion of services $${uncoveredPortion}`, uncoveredPortion],
+        [`Your portion for uncovered services $${uncoveredServices}`, uncoveredServices]
+      ]);
+
+      var pieOption = {
+        title: `Total Bill $${billAmount}  Sidecar Benefits $${sidecarBenefit}  Your Portion Before Deductible = $${uncoveredPortion + uncoveredServices}`,
+        pieSliceText: 'value'
+      };
+
+      var pieChart = new google.visualization.PieChart(document.getElementById('piechart'));
+
+      pieChart.draw(pieData, pieOption);
+
+
+
+      var pieData2 = new google.visualization.DataTable();
+      pieData2.addColumn('string', 'Benefit Name');
+      pieData2.addColumn('number', 'Value');
+
+      pieData2.addRows([
+        [`Reimbursement $${allowanceReimbursementAfterDeductible}`, allowanceReimbursementAfterDeductible],
+        [`Earned Benefits $${allowanceTaxableAfterDeductible}`, allowanceTaxableAfterDeductible],
+        [`Reimbursement used towards Deductible $${deductibleTakenFromReimbursement}`, deductibleTakenFromReimbursement],
+        [`Earned Benefit used towards Deductible $${deductibleTakenFromTaxable}`, deductibleTakenFromTaxable]
+      ]);
+
+      var pieOption2 = {
+        title: `Sidecar Benefits $${sidecarBenefit}`,
+        pieSliceText: 'value'
+      };
+
+      var pieChart2 = new google.visualization.PieChart(document.getElementById('piechart2'));
+
+      pieChart2.draw(pieData2, pieOption2);
+
+
+      var pieData3 = new google.visualization.DataTable();
+      pieData3.addColumn('string', 'Your Final Portion');
+      pieData3.addColumn('number', 'Value');
+
+      pieData3.addRows([
+        [`Your portion of services $${uncoveredPortion}`, uncoveredPortion],
+        [`Your portion for uncovered services $${uncoveredServices}`, uncoveredServices],
+        [`Reimbursement used towards Deductible $${deductibleTakenFromReimbursement}`, deductibleTakenFromReimbursement]
+      ]);
+
+      var pieOption3 = {
+        title: `Your Final Portion $${uncoveredPortion + uncoveredServices + deductibleTakenFromReimbursement}`,
+        pieSliceText: 'value'
+      };
+
+      var pieChart3 = new google.visualization.PieChart(document.getElementById('piechart3'));
+
+      pieChart3.draw(pieData3, pieOption3);
+
+
+
+
+
+      // var paymentData = new google.visualization.DataTable();
+      // paymentData.addColumn('string', 'From');
+      // paymentData.addColumn('string', 'To');
+      // paymentData.addColumn('number', 'Weight');
+      // paymentData.addRows([
+
+
+
+      // ['Member Share Pre Credit Adjustment', 'Final Member Share', 340],
+      // ['Allowance(Taxable)', 'to Account Credit (Taxable)', 100],
+      // ['Allowance(Taxable)', 'Applied Covered Benefit', 40],
+      // ['Allowance(Taxable)', 'Applied Deductible', 40],
+      // ['Member Share Pre Credit Adjustment', 'Paid via Account Credit (Taxable)', 40],
+      // ['Member Share Pre Credit Adjustment', 'Paid via Account Credit (Taxable)', 40],
+      // ['Member Share Pre Credit Adjustment', 'Paid via Account Credit (Taxable)', 40],
+      // ['Paid via Account Credit (Taxable)', 'Applied Covered Benefit', 40],
+      // ['Paid via Account Credit (Taxable)', 'Applied Deductible', 40],
+      // ['Allowance(Reimbursement)', 'to Account Credit (Reimbursement)', 260],
+      // ['Allowance(Reimbursement)', 'Paid via Reimbursment', 40],
+      // ['Allowance(Taxable)', 'Applied Earned Benefit', 40],
+      // ['Paid via Account Credit (Taxable)', 'Applied Earned Benefit', 40],
+      // ['Member Share Pre Credit Adjustment', 'Paid via Account Credit (Reimbursement)', 40],
+      // ['Paid via Account Credit (Reimbursement)', 'Paid via Reimbursment', 40],
+
+      // ]);
+      // paymentData.addRows(paymentDataRows);
+
+
+      // Instantiates and draws our chart, passing in some options.
+      // var paymentChart = new google.visualization.Sankey(document.getElementById('sankey_payment_benefit'));
+      // paymentChart.draw(paymentData, options);
+    }
+
+    function runDiagram() {
+      google.charts.load('current', { 'packages': ['sankey', 'corechart'] });
+      google.charts.setOnLoadCallback(drawChart);
+    }
+  </script>
+</head>
+
+<body>
+  <form style="display:table">
+    <div>Bill Amount <input id="bill_amount" type="text" /></div>
+    <div>Total Sidecar Benefit <input id="sidecar_benefit" type="text" /></div>
+    <div>Skip Deductible Benefit (if any) <input id="skip_deductible_benefit" type="text" /></div>
+    <div>Uncovered Services (if any) <input id="uncovered_services" type="text" /></div>
+    <div>Applicable Deductible (Not Greater than Sidecar Benefit) <input id="applicable_deductible" type="text" /></div>
+    <button onclick="runDiagram()" type="button">Run</button>
+  </form>
+  <div style="display:grid">
+    <span id="reimbursement"></span>
+    <span id="taxable"></span>
+    <span id="memberShare"></span>
+    <span id="appliedDeductibleTaxableBenefit"></span>
+  </div>
+  <div id="sankey_basic" style="width: 1000px; height: 500;"></div>
+  <div id="space" style="width: 1000px; height: 50;"></div>
+  <div id="piechart" style="width: 600; height: 500;"></div>
+  <div id="piechart2" style="width: 600; height: 500;"></div>
+  <div id="piechart3" style="width: 600; height: 500;"></div>
+  <div id="sankey_payment_benefit" style="width: 1000px; height: 500;"></div>
+
+</body>
+
+</html>
