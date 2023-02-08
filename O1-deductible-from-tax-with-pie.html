@@ -6,6 +6,7 @@
 
     function drawChart() {
 
+      const expenseType = document.querySelector('input[name="rate"]:checked').value;
       var billAmount = parseInt(document.getElementById('bill_amount').value);
       var sidecarBenefit = parseInt(document.getElementById('sidecar_benefit').value);
       var skipDeductibleBenefit = document.getElementById('skip_deductible_benefit').value ? parseInt(document.getElementById('skip_deductible_benefit').value) : 0;
@@ -111,47 +112,69 @@
         height: 500
       };
 
+      // paymentDataRows = [];
 
+      // paymentDataRows.push(['Member Share With Deductible', 'Member Share Pre Credit Adjustment', uncoveredPortion + uncoveredServices]);
+      // if (applicableDeductible > 0) {
+      //   paymentDataRows.push(['Member Share With Deductible', 'Deductible', applicableDeductible]);
+      //   if (allowanceTaxable > 0) {
 
-      paymentDataRows = [];
-
-      paymentDataRows.push(['Member Share With Deductible', 'Member Share Pre Credit Adjustment', uncoveredPortion + uncoveredServices]);
-      if (applicableDeductible > 0) {
-        paymentDataRows.push(['Member Share With Deductible', 'Deductible', applicableDeductible]);
-        if (allowanceTaxable > 0) {
-
-        }
-      }
-      if (sidecarBenefit > 0) {
-        paymentDataRows.push(['Sidecar Benefit', 'Allowance(Reimbursement)', sidecarBenefit]);
-      }
-      if (allowanceTaxable > 0) {
-        paymentDataRows.push(['Sidecar Benefit', 'Allowance(Taxable)', allowanceTaxable]);
-      }
+      //   }
+      // }
+      // if (sidecarBenefit > 0) {
+      //   paymentDataRows.push(['Sidecar Benefit', 'Allowance(Reimbursement)', sidecarBenefit]);
+      // }
+      // if (allowanceTaxable > 0) {
+      //   paymentDataRows.push(['Sidecar Benefit', 'Allowance(Taxable)', allowanceTaxable]);
+      // }
 
       var chart = new google.visualization.Sankey(document.getElementById('sankey_basic'));
       chart.draw(data, options);
 
 
 
-      var pieData = new google.visualization.DataTable();
-      pieData.addColumn('string', 'Bill Breakdown');
-      pieData.addColumn('number', 'Value');
-
-      pieData.addRows([
-        [`Sidecar Benefit $${sidecarBenefit}`, sidecarBenefit],
-        [`Your portion of services $${uncoveredPortion}`, uncoveredPortion],
-        [`Your portion for uncovered services $${uncoveredServices}`, uncoveredServices]
+      var stackedData = google.visualization.arrayToDataTable([
+        ["", "Uncovered Services", { role: 'style' }, "Covered Services", "Reimbursement", "Earned Benefit"],
+        [`Bill $${billAmount}`, uncoveredServices, '', coveredServices, 0, 0],
+        [`Sidecar Benefit $${sidecarBenefit}`, uncoveredServices, '#fff', 0, allowanceReimbursement, allowanceTaxable],
       ]);
 
-      var pieOption = {
-        title: `Total Bill $${billAmount}  Sidecar Benefits $${sidecarBenefit}  Your Portion Before Deductible = $${uncoveredPortion + uncoveredServices}`,
-        pieSliceText: 'value'
+      var stackedView = new google.visualization.DataView(stackedData);
+
+      var stackedOption = {
+        title: "Benefit Breakdown",
+        width: 800,
+        height: 400,
+        legend: { position: 'right', maxLines: 4 },
+        bar: { groupWidth: '80%' },
+        chartArea: { width: "60%", height: "80%" },
+        isStacked: true
       };
+      var stackedChart = new google.visualization.BarChart(document.getElementById("stackedBarChart"));
+      stackedChart.draw(stackedView, stackedOption);
 
-      var pieChart = new google.visualization.PieChart(document.getElementById('piechart'));
 
-      pieChart.draw(pieData, pieOption);
+
+
+
+      // var pieData = new google.visualization.DataTable();
+      // pieData.addColumn('string', 'Bill Breakdown');
+      // pieData.addColumn('number', 'Value');
+
+      // pieData.addRows([
+      //   [`Sidecar Benefit $${sidecarBenefit}`, sidecarBenefit],
+      //   [`Your portion of services $${uncoveredPortion}`, uncoveredPortion],
+      //   [`Your portion for uncovered services $${uncoveredServices}`, uncoveredServices]
+      // ]);
+
+      // var pieOption = {
+      //   title: `Total Bill $${billAmount}  Sidecar Benefits $${sidecarBenefit}  Your Portion Before Deductible = $${uncoveredPortion + uncoveredServices}`,
+      //   pieSliceText: 'value'
+      // };
+
+      // var pieChart = new google.visualization.PieChart(document.getElementById('piechart'));
+
+      // pieChart.draw(pieData, pieOption);
 
 
 
@@ -175,61 +198,45 @@
 
       pieChart2.draw(pieData2, pieOption2);
 
+      if (expenseType == 'swipe') {
+        var memberPortionData = new google.visualization.DataTable();
+        memberPortionData.addColumn('string', 'Your Final Portion');
+        memberPortionData.addColumn('number', 'Value');
 
-      var pieData3 = new google.visualization.DataTable();
-      pieData3.addColumn('string', 'Your Final Portion');
-      pieData3.addColumn('number', 'Value');
+        memberPortionData.addRows([
+          [`Your portion of services $${uncoveredPortion}`, uncoveredPortion],
+          [`Your portion for uncovered services $${uncoveredServices}`, uncoveredServices],
+          [`Reimbursement used towards Deductible $${deductibleTakenFromReimbursement}`, deductibleTakenFromReimbursement]
+        ]);
 
-      pieData3.addRows([
-        [`Your portion of services $${uncoveredPortion}`, uncoveredPortion],
-        [`Your portion for uncovered services $${uncoveredServices}`, uncoveredServices],
-        [`Reimbursement used towards Deductible $${deductibleTakenFromReimbursement}`, deductibleTakenFromReimbursement]
-      ]);
+        var memberPortionOption = {
+          title: `Your Final Portion $${uncoveredPortion + uncoveredServices + deductibleTakenFromReimbursement}`,
+          pieSliceText: 'value'
+        };
 
-      var pieOption3 = {
-        title: `Your Final Portion $${uncoveredPortion + uncoveredServices + deductibleTakenFromReimbursement}`,
-        pieSliceText: 'value'
-      };
+        var memberPortionChart = new google.visualization.PieChart(document.getElementById('memberPortionChart'));
 
-      var pieChart3 = new google.visualization.PieChart(document.getElementById('piechart3'));
+        memberPortionChart.draw(memberPortionData, memberPortionOption);
+      } else {
 
-      pieChart3.draw(pieData3, pieOption3);
+        var memberPortionData = new google.visualization.DataTable();
+        memberPortionData.addColumn('string', 'Your Payout After Deductible');
+        memberPortionData.addColumn('number', 'Value');
 
+        memberPortionData.addRows([
+          [`Your payout to reimbursement $${allowanceReimbursementAfterDeductible}`, allowanceReimbursementAfterDeductible],
+          [`Your payout to earned benefit $${allowanceTaxableAfterDeductible}`, allowanceTaxableAfterDeductible]
+        ]);
 
+        var memberPortionOption = {
+          title: `Your Payout $${allowanceReimbursementAfterDeductible + allowanceTaxableAfterDeductible}`,
+          pieSliceText: 'value'
+        };
 
+        var memberPortionChart = new google.visualization.PieChart(document.getElementById('memberPortionChart'));
 
-
-      // var paymentData = new google.visualization.DataTable();
-      // paymentData.addColumn('string', 'From');
-      // paymentData.addColumn('string', 'To');
-      // paymentData.addColumn('number', 'Weight');
-      // paymentData.addRows([
-
-
-
-      // ['Member Share Pre Credit Adjustment', 'Final Member Share', 340],
-      // ['Allowance(Taxable)', 'to Account Credit (Taxable)', 100],
-      // ['Allowance(Taxable)', 'Applied Covered Benefit', 40],
-      // ['Allowance(Taxable)', 'Applied Deductible', 40],
-      // ['Member Share Pre Credit Adjustment', 'Paid via Account Credit (Taxable)', 40],
-      // ['Member Share Pre Credit Adjustment', 'Paid via Account Credit (Taxable)', 40],
-      // ['Member Share Pre Credit Adjustment', 'Paid via Account Credit (Taxable)', 40],
-      // ['Paid via Account Credit (Taxable)', 'Applied Covered Benefit', 40],
-      // ['Paid via Account Credit (Taxable)', 'Applied Deductible', 40],
-      // ['Allowance(Reimbursement)', 'to Account Credit (Reimbursement)', 260],
-      // ['Allowance(Reimbursement)', 'Paid via Reimbursment', 40],
-      // ['Allowance(Taxable)', 'Applied Earned Benefit', 40],
-      // ['Paid via Account Credit (Taxable)', 'Applied Earned Benefit', 40],
-      // ['Member Share Pre Credit Adjustment', 'Paid via Account Credit (Reimbursement)', 40],
-      // ['Paid via Account Credit (Reimbursement)', 'Paid via Reimbursment', 40],
-
-      // ]);
-      // paymentData.addRows(paymentDataRows);
-
-
-      // Instantiates and draws our chart, passing in some options.
-      // var paymentChart = new google.visualization.Sankey(document.getElementById('sankey_payment_benefit'));
-      // paymentChart.draw(paymentData, options);
+        memberPortionChart.draw(memberPortionData, memberPortionOption);
+      }
     }
 
     function runDiagram() {
@@ -241,7 +248,11 @@
 
 <body>
   <form style="display:table">
-    <div>Bill Amount <input id="bill_amount" type="text" /></div>
+    <div id="swipe">
+      <input type="radio" name="rate" value="swipe" checked="checked"> Swipe
+      <input type="radio" name="rate" value="manual"> Manual Expense
+    </div>
+    <div>Bill Amount (after discount)<input id="bill_amount" type="text" /></div>
     <div>Total Sidecar Benefit <input id="sidecar_benefit" type="text" /></div>
     <div>Skip Deductible Benefit (if any) <input id="skip_deductible_benefit" type="text" /></div>
     <div>Uncovered Services (if any) <input id="uncovered_services" type="text" /></div>
@@ -255,11 +266,10 @@
     <span id="appliedDeductibleTaxableBenefit"></span>
   </div>
   <div id="sankey_basic" style="width: 1000px; height: 500;"></div>
-  <div id="space" style="width: 1000px; height: 50;"></div>
-  <div id="piechart" style="width: 600; height: 500;"></div>
-  <div id="piechart2" style="width: 600; height: 500;"></div>
-  <div id="piechart3" style="width: 600; height: 500;"></div>
-  <div id="sankey_payment_benefit" style="width: 1000px; height: 500;"></div>
+  <div id="stackedBarChart" style="width: 800; height: 400;"></div>
+  <!-- <div id="piechart" style="width: 600; height: 500;"></div> -->
+  <div id="piechart2" style="width: 600; height: 400;"></div>
+  <div id="memberPortionChart" style="width: 600; height: 400;"></div>
 
 </body>
 
