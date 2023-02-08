@@ -51,7 +51,7 @@
       }
 
       var deductibleTakenFromTaxable = 0;
-      var allowanceTaxableAfterDeductible = 0
+      var allowanceTaxableAfterDeductible = allowanceTaxable;
       // Step 0.  Use money from Allowance(Taxable to reduce deductible)
       if (allowanceTaxable > 0 && applicableDeductible > 0) {
         allowanceTaxableAfterDeductible = allowanceTaxable - applicableDeductible < 0 ? 0 : allowanceTaxable - applicableDeductible;
