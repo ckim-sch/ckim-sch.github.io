@@ -35,7 +35,9 @@
       dataRows.push(['Covered Services', 'Sidecar Benefit', allowanceReimbursement]);
       if (uncoveredServices > 0) {
         dataRows.push(['Bill Amount', 'Uncovered Services', uncoveredServices]);
-        dataRows.push(['Uncovered Services', 'Member Share Pre Credit Adjustment', uncoveredServices]);
+        if (expenseType == 'swipe') {
+          dataRows.push(['Uncovered Services', 'Member Share Pre Credit Adjustment', uncoveredServices]);
+        }
       }
       if (uncoveredPortion > 0) {
         dataRows.push(['Covered Services', 'Member Share Pre Credit Adjustment', uncoveredPortion]);
@@ -200,7 +202,7 @@
 
       if (expenseType == 'swipe') {
         var memberPortionData = new google.visualization.DataTable();
-        memberPortionData.addColumn('string', 'Your Final Portion');
+        memberPortionData.addColumn('string', 'Your Portion (Before Adjustment)');
         memberPortionData.addColumn('number', 'Value');
 
         memberPortionData.addRows([
@@ -268,8 +270,8 @@
   <div id="sankey_basic" style="width: 1000px; height: 500;"></div>
   <div id="stackedBarChart" style="width: 800; height: 400;"></div>
   <!-- <div id="piechart" style="width: 600; height: 500;"></div> -->
-  <div id="piechart2" style="width: 600; height: 400;"></div>
-  <div id="memberPortionChart" style="width: 600; height: 400;"></div>
+  <div id="piechart2" style="width: 600; height: 350;"></div>
+  <div id="memberPortionChart" style="width: 600; height: 350;"></div>
 
 </body>
 
